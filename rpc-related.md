@@ -8,5 +8,5 @@
 2. 为了提高微服务的数据吞吐量，单TCP链接的吞吐量也是由服务端来定义的
 3. 单TCP链接在数据吞吐量很大且服务端客户端的速度不一致的时候，可能会触发TCP拥塞机制
 
-original answer of sbordet on stackoverflow
-https://stackoverflow.com/questions/55985658/do-we-still-need-a-connection-pool-for-microservices-talking-http2
+original answer of [sbordet](https://stackoverflow.com/questions/55985658/do-we-still-need-a-connection-pool-for-microservices-talking-http2) on stackoverflow
+
