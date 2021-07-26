@@ -1,4 +1,3 @@
-
 class ESSearchOptionError(Exception):
     pass
 
@@ -39,7 +38,8 @@ class ESSearchOption:
         self._not_equal_map.update(params)
 
     def with_aggr(self, fields: list):
-        self._aggr_with_set.add(*fields)
+        for field in fields:
+            self._aggr_with_set.add(field)
 
     def wrap_search_query(self) -> dict:
         self._pre_check()
@@ -73,7 +73,25 @@ class ESSearchOption:
         return li
 
     def _wrap_aggr_query(self) -> dict:
-        pass
+        ret = {}
+        probe :dict = {}
+        for aggr in self._aggr_with_set:
+            temp = {
+                "aggs": {
+                    f"group_by_{aggr}": {
+                        "terms": {
+                            "field": aggr
+                        }
+                    },
+                }
+            }
+            if not ret:
+                ret.update(temp)
+                probe = ret["aggs"][f"group_by_{aggr}"]
+            else:
+                probe.update(temp)
+                probe = probe["aggs"][f"group_by_{aggr}"]
+        return ret
 
     def _pre_check(self):
         """
@@ -94,3 +112,4 @@ class ESSearchOption:
         for field in fields:
             if not isinstance(field, str):
                 raise ESSearchOptionError("field must be string type")
+
