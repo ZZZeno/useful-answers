@@ -1,8 +1,11 @@
 import elasticsearch
 import json
 
-
 class ESSearchOptionError(Exception):
+    pass
+
+
+class ESSearchError(Exception):
     pass
 
 
@@ -52,6 +55,10 @@ class ESSearchOption:
 
     def _remove_aggr_query(self, aggr: str):
         self._remove_mark_set.add(aggr)
+
+    @property
+    def is_aggr_on(self) -> bool:
+        return True if self._aggr_with_set else False
 
     def wrap_search_query(self) -> dict:
         self._pre_check()
@@ -134,6 +141,7 @@ class ESSearchFactory:
         self._option = option
         self._property_mapping = self._get_property_map()
         self._option_modified = False
+        self._search_res = dict()
 
     def property_map(self) -> dict:
         '''
@@ -155,7 +163,29 @@ class ESSearchFactory:
         '''
         :return: 此次查询的结果
         '''
-        pass
+        self._do_search()
+        if not self._search_res:
+            raise ESSearchError("no record is found")
+        if self._option.is_aggr_on:
+            return self._flatten_search_res()
+        return self._search_res
+
+    def _do_search(self):
+        '''
+        执行查找
+        '''
+        # self._search_res =
+        return {}
+
+    def _flatten_search_res(self) -> dict:
+        aggregations = self._search_res.get("aggregations", {})
+        if not aggregations:
+            raise ESSearchError("no record is found")
+
+        res = []
+        _flatten_es_aggr_result(self._search_res.get("aggregations"), "", res, [])
+        return {"aggr_result": res}
+
 
     def _get_property_map(self):
         es_property_mapping = {}
@@ -168,7 +198,51 @@ class ESSearchFactory:
             if aggr_option not in self._property_mapping:
                 self._option._remove_aggr_query(aggr_option)
             else:
-                if self._property_mapping.get(aggr_option, {}).get("type") != "keyword":
+                if self._property_mapping.get(aggr_option, {}).get("type") == "text":
                     self._option._add_new_aggr_query(aggr_option)
         self._option_modified = True
 
+
+_GROUP_BY = "group_by"
+
+def _remove_group_by_mark(old: str) -> str:
+    return old.replace(_GROUP_BY, "")
+
+
+def _hit_bottom(aggregations: dict) -> bool:
+    for k in aggregations.keys():
+        if k.startswith(_GROUP_BY):
+            return False
+    return True
+
+
+def _extract_group_by_key(aggregations: dict) -> (str, list):
+    for k, v in aggregations.items():
+        if k.startswith(_GROUP_BY):
+            return k, v.get("buckets", [])
+
+
+def _deepcopy(keyword_list: list) -> list:
+    ret = []
+    for item in keyword_list:
+        new_item = copy.deepcopy(item)
+        ret.append(new_item)
+    return ret
+
+def _flatten_es_aggr_result(aggregations: dict, key: str, res: list, keyword_list: list):
+    if _hit_bottom(aggregations):
+        temp = {
+            "count": aggregations.get("doc_count", 0),
+        }
+        for keyword in keyword_list:
+            temp.update(keyword)
+        temp.update({_remove_group_by_mark(key): aggregations.get("key", None)})
+        res.append(temp)
+        return
+
+    group_by_key, buckets = _extract_group_by_key(aggregations)
+    for bucket in buckets:
+        print(bucket)
+        new_keyword_list = _deepcopy(keyword_list)
+        new_keyword_list.append({_remove_group_by_mark(group_by_key): bucket.get("key")})
+        _flatten_es_aggr_result(bucket, group_by_key, res, new_keyword_list)
