@@ -164,8 +164,6 @@ class ESSearchFactory:
         return mapping
 
     def _modify_option_aggr_query(self):
-        remove_list = []
-        update_list = []
         for aggr_option in self._option._aggr_with_set:
             if aggr_option not in self._property_mapping:
                 self._option._remove_aggr_query(aggr_option)
