@@ -1,3 +1,44 @@
+import elasticsearch
+import json
+
+
+class ESSearchFactory:
+    def __init__(self, index: str, option: ESSearchOption):
+        self._index = index
+        self._option = option
+        self._property_mapping = None
+        self._option_modified = False
+
+    def property_map(self):
+        if not self._property_mapping:
+            self._get_property_map()
+        return self._property_mapping
+
+    def wrap_query(self):
+        if not self._option_modified:
+            self._modify_option_aggr_query()
+        return self._option.wrap_search_query()
+
+    def search(self):
+        pass
+
+    def _get_property_map(self) -> dict:
+        es_property_mapping = {}
+        mapping = es_property_mapping.get("data", {}).get(self._index, {}).get("mappings", {}).get("bug", {}).get(
+            "properties", {})
+        return mapping
+
+    def _modify_option_aggr_query(self):
+        for aggr_option in self._option._aggr_with_set:
+            if aggr_option not in self._property_mapping:
+                self._option._remove_aggr_query(aggr_option)
+            else:
+                if self._property_mapping.get(aggr_option, {}).get("type") != "keyword":
+                    self._option._remove_aggr_query(aggr_option)
+                    self._option._add_new_aggr_query(f"{aggr_option}.keyword")
+        self._option_modified = True
+
+
 class ESSearchOptionError(Exception):
     pass
 
@@ -41,10 +82,16 @@ class ESSearchOption:
         for field in fields:
             self._aggr_with_set.add(field)
 
+    def _add_new_aggr_query(self, n: str):
+        self._aggr_with_set.add(n)
+
+    def _remove_aggr_query(self, aggr: str):
+        self._aggr_with_set.remove(aggr)
+
     def wrap_search_query(self) -> dict:
         self._pre_check()
         ret = {
-            "size": self._page_size if not self._aggr_with_set else 0,   # 如果有聚合条件则不返回数据集
+            "size": self._page_size if not self._aggr_with_set else 0,  # 如果有聚合条件则不返回数据集
             "query": {
                 "bool": {
                     "must": self._wrap_must_query(),
@@ -74,7 +121,7 @@ class ESSearchOption:
 
     def _wrap_aggr_query(self) -> dict:
         ret = {}
-        probe :dict = {}
+        probe: dict = {}
         for aggr in self._aggr_with_set:
             temp = {
                 "aggs": {
@@ -112,4 +159,3 @@ class ESSearchOption:
         for field in fields:
             if not isinstance(field, str):
                 raise ESSearchOptionError("field must be string type")
-
