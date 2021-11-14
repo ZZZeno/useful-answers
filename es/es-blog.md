@@ -23,3 +23,12 @@ Content-Type: application/json
 }
 
 参考： https://blog.csdn.net/laoyang360/article/details/81271491
+
+
+es  index mapping设置有问题，需要重建，重建步骤
+1. 用新的mapping创建index
+2. 调用 reindex 接口进行数据迁移
+3. 删除旧的index
+4. 将新的index的alias设置成旧的index
+
+https://cloud.tencent.com/developer/article/1768205
