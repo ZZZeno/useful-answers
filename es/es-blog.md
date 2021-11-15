@@ -31,5 +31,37 @@ es  index mapping设置有问题，需要重建，重建步骤
 2. 调用 reindex 接口进行数据迁移
 3. 删除旧的index
 4. 将新的index的alias设置成旧的index
+new index
+```
+PUT /new-index-test
+```
+
+define mapping
+```
+PUT /new-index-test/_mapping/_doc
+{
+  "properties": {
+    "test_id": {
+      "type": "long"
+    }
+  }
+}
+```
+reindex
+```
+/_reindex
+{
+  "source": {
+  "index": "index-test"
+  },
+  "dest": {
+    "index": "new-index-test"
+  }
+}
+```
+delete old index
+```
+DELETE /index-test
+```
 
 参考：https://cloud.tencent.com/developer/article/1768205
