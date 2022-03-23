@@ -5,7 +5,7 @@ Note that this can however use significant memory. Alternatively use a keyword f
 
 https://kalasearch.cn/community/tutorials/elasticsearch-fielddata-is-disabled-on-text-fields-error/
 
-
+------------------------------------------------------------
 
 解决es 单节点状态下，状态为yellow的问题
 
@@ -24,7 +24,7 @@ Content-Type: application/json
 
 参考： https://blog.csdn.net/laoyang360/article/details/81271491
 
-
+------------------------------------------------------------
 
 es  index mapping设置有问题，需要重建，重建步骤
 1. 用新的mapping创建index
